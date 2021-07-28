@@ -45,6 +45,7 @@ class OctoprintCompat:
         self.klippy_apis: APIComp = self.server.lookup_component('klippy_apis')
         self.heaters: Dict[str, Dict[str, Any]] = {}
         self.last_print_stats: Dict[str, Any] = {}
+        self.last_virtual_sdcard: Dict[str, Any] = {}
 
         # Register status update event
         self.server.register_event_handler(
@@ -112,14 +113,18 @@ class OctoprintCompat:
         # subscribe objects
         sub: Dict[str, Any] = {s: None for s in sensors}
         sub['print_stats'] = None
+        sub['virtual_sdcard'] = None
         result = await self.klippy_apis.subscribe_objects(sub)
         self.last_print_stats = result.get('print_stats', {})
+        self.last_virtual_sdcard = result.get('virtual_sdcard', {})
         if sensors:
             self.heaters = {name: result.get(name, {}) for name in sensors}
 
     def _handle_status_update(self, status: Dict[str, Any]) -> None:
         if 'print_stats' in status:
             self.last_print_stats.update(status['print_stats'])
+        if 'virtual_sdcard' in status:
+            self.last_virtual_sdcard.update(status['virtual_sdcard'])
         for heater_name, data in self.heaters.items():
             if heater_name in status:
                 data.update(status[heater_name])
@@ -247,15 +252,15 @@ class OctoprintCompat:
         """
         return {
             'job': {
-                'file': {'name': None},
+                'file': {'name': self.last_print_stats['filename'],'size': int(self.last_virtual_sdcard['file_size'])},
                 'estimatedPrintTime': None,
                 'filament': {'length': None},
                 'user': None,
             },
             'progress': {
-                'completion': None,
-                'filepos': None,
-                'printTime': None,
+                'completion': self.last_virtual_sdcard['progress'],
+                'filepos': int(self.last_virtual_sdcard['file_position']),
+                'printTime': self.last_print_stats['total_duration'],
                 'printTimeLeft': None,
                 'printTimeOrigin': None,
             },
