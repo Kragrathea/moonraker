@@ -252,13 +252,16 @@ class OctoprintCompat:
         """
         return {
             'job': {
-                'file': {'name': self.last_print_stats['filename'],'size': int(self.last_virtual_sdcard['file_size'])},
+                'file': {'name': self.last_print_stats['filename'],
+                    'path': self.last_print_stats['filename'],
+                    'size': int(self.last_virtual_sdcard['file_size'])
+                    },
                 'estimatedPrintTime': None,
                 'filament': {'length': None},
                 'user': None,
             },
             'progress': {
-                'completion': self.last_virtual_sdcard['progress'],
+                'completion': self.last_virtual_sdcard['progress']*100,
                 'filepos': int(self.last_virtual_sdcard['file_position']),
                 'printTime': self.last_print_stats['total_duration'],
                 'printTimeLeft': None,
